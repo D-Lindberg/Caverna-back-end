@@ -5,11 +5,12 @@ from action_grouper import Action_Group
 #refence rule appendix page A6 under "Part 3: The Action Spaces"
 class Game_Action_Space:
     def __init__(self, **kwargs):
-        self.id = kwargs.get('id')
+        self.id = kwargs.get('id', 0)
         self.name = kwargs.get('name')
         self.is_used = False
-        self._action_group = self.unpack_this(kwargs.get['action_group'], 0)
+        self._action_group = self.unpack_this(kwargs.get('action_group'), 0)
         self.is_clearing_prevented = False
+        self.start_on_round = kwargs.get('start_on_round', 1)
 
         self._dog_static = kwargs.get('dog_static', 0)
 
@@ -28,6 +29,7 @@ class Game_Action_Space:
         self._ore_accumulating = kwargs.get('ore_accumulating', 0)
         self._ore_current = self._ore_initial
         self._ore_static = kwargs.get('ore_static', 0)
+        self._ore_bonus_for_mines = kwargs.get('ore_bonus_for_mines', 0)
 
         self._pumpkin_initial = kwargs.get('pumpkin_initial', 0)
         self._pumpkin_accumulating = kwargs.get('pumpkin_accumulating', 0)
@@ -38,6 +40,7 @@ class Game_Action_Space:
         self._ruby_accumulating = kwargs.get('ruby_accumulating', 0)
         self._ruby_current = self._ruby_initial
         self._ruby_static = kwargs.get('ruby_static', 0)
+        self._mines_needed_for_ruby_bonus = kwargs.get('mines_needed_for_ruby_bonus', 0)
 
         self._sheep_initial = kwargs.get('sheep_initial', 0)
         self._sheep_accumulating = kwargs.get('sheep_accumulating', 0)
@@ -77,7 +80,9 @@ class Game_Action_Space:
         total += self._wheat_current
         total += self._pumpkin_current
 
-    def cleanup_and_add_resources(self, is_solo_game):
+    def cleanup_and_add_resources(self, is_solo_game, round_number):
+        if self.name == AST.Ruby_Mining_B and round_number < self.start_on_round:
+            return
         if self.name == AST.Skip_Round:
             return
         self._action_group.set_is_used(False)

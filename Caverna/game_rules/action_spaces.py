@@ -106,6 +106,7 @@ class Game_Action_Space:
             self._donkey_current += self._donkey_accumulating
             self._wheat_current += self._wheat_accumulating
             self._pumpkin_current += self._pumpkin_accumulating
+        self.is_clearing_prevented = False
 
     def unpack_this(self, package, order):
         if len(package) == 1:
@@ -117,6 +118,27 @@ class Game_Action_Space:
                 nested.actions.append(Action_Group(element, True, index))
             else:
                 nested.actions.append(self.unpack_this(element, index))
+
+    def collect_resources(self):
+        resources = {
+            'Dog': self._dog_static,
+            'Donkey': self._donkey_current,
+            'Food': self._food_current + self._food_static,
+            'Gold' : self.gold_static,
+            'Ore' : self._ore_current + self._ore_static,
+            'Pumpkin' : self._pumpkin_current + self._pumpkin_static,
+            'Ruby' : self._ruby_current + self._ruby_static,
+            'Sheep' : self._sheep_current,
+            'Stone' : self._stone_current + self._stone_static,
+            'Wheat' : self._wheat_static,
+            'Wood' : self._wood_current + self._wood_static,
+            'Bonus' : {
+                'Ruby+1_if_this_many_mines' : self._mines_needed_for_ruby_bonus,
+                'Ore_2_per_mine' : self._ore_bonus_for_mines
+                }
+        }
+        return resources
+
         
 
 

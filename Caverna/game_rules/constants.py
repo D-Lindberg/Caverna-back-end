@@ -357,11 +357,24 @@ FOREST_TYPES = [
     TILE_TYPES.Pasture_Large_Left,
     TILE_TYPES.Pasture_Large_Right,
     TILE_TYPES.Pasture_Small,
+    TILE_TYPES.Pumpkin_Field_1,
+    TILE_TYPES.Pumpkin_Field_2,
+    TILE_TYPES.Wheat_Field_1,
+    TILE_TYPES.Wheat_Field_2,
+    TILE_TYPES.Wheat_Field_3
+]
+
+CAVE_TYPES = [
+    TILE_TYPES.Cavern, 
+    TILE_TYPES.Deep_Tunnel, 
+    TILE_TYPES.Ore_Mine, 
+    TILE_TYPES.Ruby_Mine, 
+    TILE_TYPES.Tunnel
 ]
 
 #refence rule book page 20 under "Rules on Animal Husbandry"
-LOCATIONS_THAT_MAY_HOLD_ANIMALS = [
-    -1,
+ANIMAL_TILE_TYPES = [
+    TILE_TYPES.Stable,
     TILE_TYPES.Meadow,
     TILE_TYPES.Pasture_Small,
     TILE_TYPES.Pasture_Large_Left,
@@ -369,7 +382,8 @@ LOCATIONS_THAT_MAY_HOLD_ANIMALS = [
     TILE_TYPES.Starting_Tile,
     TILE_TYPES.Ore_Mine,
     TILE_TYPES.Ruby_Mine,
-    BUILDING_TYPES.Breakfast_Room
+    BUILDING_TYPES.Breakfast_Room,
+    BUILDING_TYPES.Cuddle_Room
 ]
 
 #refence rule book page 11 under "Food Conversion Rules"

@@ -1,21 +1,39 @@
 from constants import (
-    ACTION_GROUP_TYPES,
-    ACTION_SPACE_TYPES, 
-    BUILDING_TYPES, 
-    CAVERNA_ACTIONS, 
-    DISCARD_ACTIONS, 
-    DUAL_TILES, 
-    EXPEDITION_BREEDING_OPTIONS, 
-    EXPEDITION_REWARDS, 
-    FOOD_ACTIONS, 
-    HARVEST_OPTIONS, 
-    HARVEST_TYPES, 
-    RESOURCE_TYPES, 
-    ROUND_BONUS_TYPES, 
-    RUBY_TRADES, 
-    TILE_TYPES as TT, 
-)
+    BUILDING_TYPES as BT, 
+    BUILDING_TILE_ACTIONS, 
+    BUILDINGS_WITH_ACTIONS, 
+    TILE_TYPES as TT
+    )
 
+'''
+time to regroup.
+the tile manager should receive game boards from database to load into current working query.
+
+current working queries will be:
+
+to see if a tile can be placed and reply with list of possible placements for a tile.
+
+to place a tile. verify that it can be placed and then place or don't place depending on results of verification. finally return true or false of placement.
+
+export all locations that can have animals to the animal manager.
+
+#answer if a player has a specific tile/building(mainly buildings) reply should only need to be true or false.
+
+#reply answer to whether a specific coordinate has been filled (will be used to apply bonuses)
+
+#given aspecific coordinate reply with what type of tile or building is there or none
+
+#give the total count/occurance of specific types of tile(s)/building(s) again for bonuses or actions.
+
+#return the total count of undiscovered spaces
+
+#dwarf capacity is determined by specific buildings. need to reply with that capacity.
+
+#certain buildings present action options that can be used at various times. Tile manager needs to reply with a list of action options.
+
+chould be able to export everything to be saved back in database
+
+'''
 
 class Tile_Manager:
     def __init__(self):
@@ -43,6 +61,87 @@ class Tile_Manager:
             for y in range(self.TILE_AREA_HEIGHT):
                 results.append((x, y))
         return results
+
+    def empty_space_count(self):
+        empty_count = 0
+        for (x, y) in self.all_coordinates:
+            if self.cave_spaces[x][y] == -1:
+                empty_count += 1
+            if self.forest_spaces[x][y] == -1 and self.stables_spaces[x][y] == -1:
+                empty_count += 1
+        return empty_count
+
+    def get_tile_count(self, tile_name):
+        if tile_name == -1:
+            return self.empty_space_count()
+        tile_count = 0
+        for (x, y) in self.all_coordinates:
+            if self.cave_spaces[x][y] == tile_name:
+                tile_count += 1
+            if self.forest_spaces[x][y] == tile_name:
+                tile_count += 1
+            if self.stable_spaces[x][y] == tile_name:
+                tile_count += 1
+        return tile_count
+
+    def get_tile_count_from_list_of_types(self, list_of_types):
+        count = 0
+        for type in list_of_types:
+            count += self.get_tile_count(type)
+        return count
+
+    def get_tile_type(self, position, is_forest):
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
+        x, y = position
+        result = []
+        result.append(tile_area[x][y])
+        if is_forest and self.stable_spaces[x][y] != -1:
+            result.append(TT.Stable)
+            if result == [-1, TT.Stable]:
+                result = [TT.Stable] 
+        return result
+
+    def get_dwarf_Capacity(self):
+        capacity = 2
+        capacity += self.get_tile_count_from_list_of_types([
+            BT.Dwelling, 
+            BT.Simple_Dwelling1,
+            BT.Simple_Dwelling2
+        ])
+        capacity += 2 * self.get_tile_count(BT.Couple_Dwelling)
+        if capacity > 5:
+            capacity = 5
+        capacity += self.get_tile_count(BT.Additional_Dwelling)
+        return capacity
+
+    def get_occupied_spaces_not_including_stables(self, is_forest):
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
+        spaces = []
+        for (x, y) in self.all_coordinates:
+            if tile_area[x][y] != -1:
+                spaces.append((x, y))
+        return spaces
+
+    def position_not_empty_excluding_stable(self, position, is_forest):
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
+        x, y = position
+        return tile_area[x][y] != -1
+
+    def has_tile_named(self, tile_name):
+        return self.get_tile_count(tile_name) > 0
+
+    def all_actions_from_buildings(self):
+        actions = []
+        for column in self.cave_spaces:
+            for building in column:
+                if building in BUILDINGS_WITH_ACTIONS:
+                    actions.extend(BUILDING_TILE_ACTIONS[building])
+        return actions
+
+    def get_locations_that_may_hold_animals(self):
+        pass
+
+
 
     def get_large_pastures(self):
         return self._large_pastures
@@ -77,10 +176,7 @@ class Tile_Manager:
         return len(temp) > 0
 
     def get_matching_tile_spaces(self, list_of_tile_types, is_forest):
-        if is_forest:
-            tile_area = self.forest_spaces
-        else:
-            tile_area = self.cave_spaces
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
         results = []
         for (x, y) in self.all_coordinates:
             if tile_area[x][y] in list_of_tile_types:
@@ -127,10 +223,7 @@ class Tile_Manager:
         return len(result) > 0
 
     def get_valid_single_empty_tile_spaces(self, is_forest):
-        if is_forest:
-            tile_area = self.forest_spaces
-        else:
-            tile_area = self.cave_spaces
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
         result = []
         xx, yy = self._first_part_of_double
         for (x, y) in self.all_coordinates:
@@ -142,10 +235,7 @@ class Tile_Manager:
         return results
 
     def get_adjacent_empty_spaces(self, position, is_forest):
-        if is_forest:
-            tile_area = self.forest_spaces
-        else:
-            tile_area = self.cave_spaces
+        tile_area = self.forest_spaces if is_forest else self.cave_spaces
         result = []
         x, y = position
         if x > 0 and tile_area[x - 1][y] == -1:
@@ -157,46 +247,6 @@ class Tile_Manager:
         if y < self.TILE_AREA_HEIGHT and tile_area[x][y + 1] == -1:
             result.append((x, y + 1))
         return result
-
-    def get_dwarf_Capacity(self):
-        capacity = 2
-        capacity += self.get_tile_count(BUILDING_TYPES.Dwelling)
-        capacity += self.get_tile_count(BUILDING_TYPES.Simple_Dwelling1)
-        capacity += self.get_tile_count(BUILDING_TYPES.Simple_Dwelling2)
-        capacity += 2 * self.get_tile_count(BUILDING_TYPES.Couple_Dwelling)
-        if capacity > 5:
-            capacity = 5
-        capacity += self.get_tile_count(BUILDING_TYPES.Additional_Dwelling)
-        return capacity
-
-    def get_tile_count(self, tile_type_to_match):
-        tile_count = 0
-        for (x, y) in self.all_coordinates:
-            if self.cave_spaces[x][y] == tile_type_to_match:
-                tile_count += 1
-            if self.forest_spaces[x][y] == tile_type_to_match:
-                tile_count += 1
-            if self.stable_spaces[x][y] == tile_type_to_match:
-                tile_count += 1
-        return tile_count
-    
-    def get_tile_type(self, position, is_forest):
-        x, y = position
-        if is_forest:
-            tile_area = self.forest_spaces
-        else:
-            tile_area = self.cave_spaces
-        result = []
-        result.append(tile_area[x][y])
-        if is_forest and self.stable_spaces[x][y] != -1:
-            result.append(TT.Stable)
-
-    def set_tile_at(self, position, is_forest, is_expedition):
-        food_gain = 0
-        pig_gain = 0
-        ruby_gain = 0
-
-        return [food_gain, pig_gain, ruby_gain]
 
     def get_valid_tile_spots(self):
         tile = self.tiles_to_place[0]
@@ -266,3 +316,6 @@ B = Tile_Manager()
 B.forest_spaces[0][0] = TT.Meadow
 B.forest_spaces[0][2] = TT.Meadow
 print(B.can_build_large_pasture())
+B.cave_spaces[2][3] = BT.Dwelling
+print(A.get_dwarf_Capacity())
+print(B.get_dwarf_Capacity())

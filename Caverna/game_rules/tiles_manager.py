@@ -3,6 +3,8 @@ from constants import (
     BUILDING_TYPES as BT, 
     BUILDING_TILE_ACTIONS, 
     BUILDINGS_WITH_ACTIONS, 
+    CAVE_TYPES, 
+    DUAL_TILES, 
     FOREST_TYPES, 
     TILE_TYPES as TT
     )
@@ -36,6 +38,181 @@ to place a tile. verify that it can be placed and then place or don't place depe
 chould be able to export everything to be saved back in database
 
 '''
+
+class TileManager2:
+    def __init__(self, **kwargs):
+        self.WIDTH = 5
+        self.HEIGHT = 6
+        self.PLAY_AREA = self.play_area_coordinates()
+        self.ALL_POSITIONS = self.all_coordinates()
+        self.tiles_to_place = []
+        self.arrange_animals_triggered = False
+
+
+        self.caves_location_to_types = kwargs.get('caves',{})
+        if not self.caves_location_to_types:
+            self.caves_location_to_types = self.generate_cave_dict()
+        self.caves_type_to_locations = self.convert_cave_dict()
+
+        self.forest_location_to_types = kwargs.get('forest', {})
+        if not self.forest_location_to_types:
+            self.forest_location_to_types = self.generate_forest_dict()
+        self.forest_type_to_locations = self.convert_forest_dict()
+
+        self.update_large_pasture_locations()
+
+        #variable
+        self.expandable_forest = self.has_tile_named(BT.Office_Room)
+        self.tunnels_are_also_caverns = self.has_tile_named(BT.Work_Room)
+
+    def play_area_coordinates(self):
+        result = []
+        for x in range(1, self.WIDTH - 1):
+            for y in range(1, self.HEIGHT - 1):
+                result.append((x, y))
+        return result
+
+    def all_coordinates(self):
+        results = []
+        for x in range(self.WIDTH):
+            for y in range(self.HEIGHT):
+                results.append((x, y))
+        return results
+
+    def generate_cave_dict(self):
+        D = {location: [] for location in self.PLAY_AREA}
+        D[(1, 1)].append(TT.Starting_Tile)
+        D[(1, 2)].append(TT.Cavern)
+        return D
+    
+    def convert_cave_dict(self):
+        D = {building : [] for building in BT.values()}
+        del D[BT.Unavailable]
+        for tile_type in CAVE_TYPES:
+            D[tile_type] = []
+        D['empties'] = set(self.PLAY_AREA)
+        for (location, tile_types) in self.caves_location_to_types.items():
+            for tile_type in tile_types:
+                D[tile_type].append(location)
+                D['empties'].discard(location)
+        return D
+
+    def generate_forest_dict(self):
+        D = {location: [] for location in self.ALL_POSITIONS}
+        return D
+
+    def convert_forest_dict(self):
+        D = {tile_type: [] for tile_type in FOREST_TYPES}
+        del D[DUAL_TILES.Field_Meadow]
+        D['empties'] = set(self.PLAY_AREA)
+        extra_empty_spaces = set(self.ALL_POSITIONS) - set(self.PLAY_AREA)
+        extra_empty_spaces.discard((0,0))
+        extra_empty_spaces.discard((0,5))
+        extra_empty_spaces.discard((4,0))
+        extra_empty_spaces.discard((4,5))
+        D['extra empties'] = extra_empty_spaces
+        for (location, tile_types) in self.forest_location_to_types:
+            for tile_type in tile_types:
+                D[tile_type].append(location)
+                D['empties'].discard(location)
+                D['extra empties'].discard(location)
+        return D
+        
+    def update_large_pasture_locations(self):
+        types = self.forest_type_to_locations
+        coordinates = self.forest_location_to_types
+        tile_a = TT.Pasture_Large_Left
+        tile_b = TT.Pasture_Large_Right
+        starting_positions = set(types[tile_a])
+        matching_positions = set(types[tile_b])
+        while len(types['Large Pastures']) != len(types[tile_a]):
+            pasture_coordinates = []
+            for (x, y) in starting_positions:
+                match_above = tile_b in coordinates[(x, y + 1)]
+                match_on_side = tile_b in coordinates[(x + 1, y)]
+                if match_above and match_on_side:
+                    if (x, y + 1) in matching_positions and (x + 1, y) in matching_positions:
+                        continue
+
+                if match_above and (x, y + 1) in matching_positions:
+                    pasture_coordinates.append(((x, y), (x, y + 1)))
+                    break
+                pasture_coordinates.append(((x, y), (x + 1, y)))
+                break
+            types['Large Pastures'].append(pasture_coordinates)
+            starting_positions.discard(pasture_coordinates[0])
+            matching_positions.discard(pasture_coordinates[1])
+
+    def empty_space_count_for_scoring(self):
+        return len(self.forest_type_to_locations['empties']) + len(self.caves_type_to_locations['empties'])
+
+
+    def get_all_locations_of(self, tile_name):
+        F = self.forest_type_to_locations
+        C = self.caves_type_to_locations
+        return F[tile_name] if tile_name in FOREST_TYPES else C[tile_name]
+
+    def get_tile_count(self, tile_name):
+        return len(self.get_all_locations_of(tile_name))
+
+    def get_tile_count_from_list_of_types(self, list_of_types):
+        return sum([self.get_tile_count(tile_name) for tile_name in list_of_types])
+
+    def has_tile_named(self, tile_name):
+        return self.get_tile_count(tile_name) > 0
+
+    def get_dwarf_Capacity(self):
+        capacity = 2
+        capacity += self.get_tile_count_from_list_of_types([
+            BT.Dwelling, 
+            BT.Simple_Dwelling1,
+            BT.Simple_Dwelling2
+        ])
+        capacity += 2 * self.get_tile_count(BT.Couple_Dwelling)
+        if capacity > 5:
+            capacity = 5
+        capacity += self.get_tile_count(BT.Additional_Dwelling)
+        return capacity
+    
+    def get_name_of_tile_at(self, position, is_forest):
+        return self.forest_location_to_types[position] if is_forest else self.caves_location_to_types[position]
+
+    def locations_already_occupied_excluding_stables(self, is_forest):
+        board = self.forest_type_to_locations if is_forest else self.caves_type_to_locations
+        coordinates = self.ALL_POSITIONS if is_forest else self.PLAY_AREA
+        all_occupied = set(coordinates) - board['empties']
+        diffrent_board = self.forest_location_to_types if is_forest else self.caves_location_to_types
+        return [location for location in all_occupied if diffrent_board[location] != [TT.Stable]]
+
+    def excluding_stables_was_tile_placed_at(self, position, is_forest):
+        names = self.forest_location_to_types[position] if is_forest else self.caves_location_to_types[position]
+        return True if len(names) == 2 or len(names) == 1 and TT.Stable not in names else False
+
+    def all_actions_from_buildings(self):
+        return [BUILDING_TILE_ACTIONS[building] for building, _locations in self.caves_type_to_locations.items() if building in BUILDINGS_WITH_ACTIONS]
+
+    def animal_locations_in(self, board_type):
+        if board_type == 'forest':
+            initial_board = self.forest_type_to_locations
+            other_board = self.forest_location_to_types
+            base_set = set(ANIMAL_TILE_TYPES).intersection(set(FOREST_TYPES))
+        else:
+            initial_board = self.caves_type_to_locations
+            other_board = self.caves_location_to_types
+            base_set = set(ANIMAL_TILE_TYPES).difference(set(FOREST_TYPES))
+        base_locations = set([initial_board[tile] for tile in base_set])
+        return [(board_type, location, other_board[location]) for location in base_locations]
+
+    def all_animal_locations(self):
+        locations = []
+        locations.extend(self.animal_locations_in('forest'))
+        locations.extend(self.animal_locations_in('caves'))
+        return locations
+
+
+
+
+
 
 class Tile_Manager:
     def __init__(self, **kwargs):

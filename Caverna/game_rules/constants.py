@@ -359,6 +359,7 @@ FOREST_TYPES = [
     TILE_TYPES.Pasture_Small,
     TILE_TYPES.Pumpkin_Field_1,
     TILE_TYPES.Pumpkin_Field_2,
+    TILE_TYPES.Stable,
     TILE_TYPES.Wheat_Field_1,
     TILE_TYPES.Wheat_Field_2,
     TILE_TYPES.Wheat_Field_3
@@ -369,6 +370,7 @@ CAVE_TYPES = [
     TILE_TYPES.Deep_Tunnel, 
     TILE_TYPES.Ore_Mine, 
     TILE_TYPES.Ruby_Mine, 
+    TILE_TYPES.Starting_Tile,
     TILE_TYPES.Tunnel
 ]
 

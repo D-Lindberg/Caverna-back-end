@@ -5,7 +5,7 @@ from constants import (
     BUILDING_TILE_ACTIONS,
     BUILDINGS_WITH_ACTIONS,
     CAVE_TYPES,
-    DUAL_TILES,
+    DUAL_TILES as DT,
     FOREST_TYPES,
     TILE_TYPES as TT
 )
@@ -304,42 +304,12 @@ class Board:
             return True, str(len(locations)), sorted(locations)
         return False, "No place to build on", []
 
-    def place_building(self, building, location):
-        available, msg, locations = self.can_building_be_placed()
-        if not available:
-            return available, msg, locations
-        if location not in locations:
-            return False, "Position given doesn't match try from here:", locations
-        board = self.board
-        lookup = self.board_inverted
-        previous_type = board[location]
-        board[location].clear()
-        board[location].add(building)
-        lookup[building].add(location)
-        lookup[previous_type].discard(location)
-        return True, "Success", location
-
     # tunnel or cavern
     def can_tunnel_or_cavern_be_placed(self):
         locations = sorted(self.board_inverted.single)
         if len(locations) > 0:
             return True, str(len(locations)), locations
         return False, "No empty spaces", []
-
-    def place_tunnel_or_cavern(self, tile_type, location):
-        available, msg, locations = self.can_tunnel_or_cavern_be_placed()
-        if not available:
-            return available, msg, locations
-        if location not in locations:
-            return False, "Position given doesn't match try from here:", locations
-        board = self.board
-        lookup = self.board_inverted
-        previous_type = board[location]
-        board[location].clear()
-        board[location].add(tile_type)
-        lookup[tile_type].add(location)
-        lookup[previous_type].discard(location)
-        return True, "Success", location
 
     # ruby-mine
     def can_ruby_mine_be_placed(self):
@@ -349,43 +319,12 @@ class Board:
             return True, str(len(locations)), sorted(locations)
         return False, "No tunnels to build on", []
 
-    def place_ruby_mine(self, location):
-        available, msg, locations = self.can_ruby_mine_be_placed()
-        if not available:
-            return available, msg, locations
-        if locations not in locations:
-            return False, "Position given doesn't match try from here", locations
-        board = self.board
-        lookup = self.board_inverted
-        previous_type = board[location]
-        board[location].clear()
-        board[location].add(TT.Ruby_Mine)
-        lookup[TT.Ruby_Mine].add(location)
-        lookup[previous_type].discard(location)
-        if previous_type == TT.Deep_Tunnel:
-            return True, "Success and bonus achieved", location
-        return True, "Success", location
-
     # meadow
     def can_meadow_be_placed(self):
         locations = sorted(self.board_inverted.single)
         if len(locations) > 0:
             return True, str(len(locations)), locations
         return False, "No empty spaces", []
-
-    def place_meadow(self, location):
-        available, msg, locations = self.can_meadow_be_placed()
-        if not available:
-            return available, msg, locations
-        if location not in locations:
-            return False, "Position given doesn't match try from here", locations
-        board = self.board
-        lookup = self.board_inverted
-        board[location].discard('empty')
-        board[location].add(TT.Ruby_Mine)
-        lookup[TT.Ruby_Mine].add(location)
-        lookup.empty.discard(location)
-        return True, "Success", location
 
     # field
     def can_field_be_placed(self):
@@ -395,40 +334,12 @@ class Board:
             return True, str(len(locations)), sorted(locations)
         return False, "No spaces available", []
 
-    def place_field(self, location):
-        available, msg, locations = self.can_field_be_placed()
-        if not available:
-            return available, msg, locations
-        if location not in locations:
-            return False, "Position given doesn't match try from here", locations
-        board = self.board
-        lookup = self.board_inverted
-        board[location].discard('empty')
-        board[location].add(TT.Field)
-        lookup[TT.Field].add(location)
-        lookup.empty.discard(location)
-        return True, "Success", location
-
     # small-pasture
     def can_small_pasture_be_placed(self):
         locations = self.board_inverted[TT.Meadow].copy()
         if len(locations) > 0:
             return True, str(len(locations)), sorted(locations)
         return False, "No spaces available", []
-
-    def place_small_pasture(self, location):
-        available, msg, locations = self.can_small_pasture_be_placed()
-        if not available:
-            return available, msg, locations
-        if location not in locations:
-            return False, "Position given doesn't match try from here", locations
-        board = self.board
-        lookup = self.board_inverted
-        board[location].discard(TT.Meadow)
-        board[location].add(TT.Pasture_Small)
-        lookup[TT.Pasture_Small].add(location)
-        lookup.empty.discard(location)
-        return True, "Success", location
 
     # ore-mine and deep-tunnel
     def can_ore_mine_and_deep_tunnel_be_placed(self):
@@ -437,42 +348,171 @@ class Board:
             return True, str(len(locations)), sorted(locations)
         return False, "No spaces available", []
 
-    def place_ore_mine_and_deep_tunnel(self, location):
+    # large-pasture
+    def can_large_pasture_be_placed(self):
+        locations = self.board_inverted.special.copy()
+        results = [(a, b) for (a, b) in locations if a < b]
+        if len(results) > 0:
+            return True, str(len(results)), sorted(results)
+        return False, "No spaces available", []
+
+    # cavern-cavern
+    def can_cavern_cavern_be_placed(self):
+        locations = self.board_inverted.double.copy()
+        results = [(a,b) for (a, b) in locations if a < b]
+        if len(results)> 0:
+            return True, str(len(results)), sorted(results)
+        return False, "No spaces available", []
+
+    # cavern-tunnel
+    def can_cavern_tunnel_be_placed(self):
+        locations = self.board_inverted.double.copy()
+        if len(locations) > 0:
+            return True, str(len(locations)), sorted(locations)
+        return False, "No spaces available", []
+
+    # meadow-field
+    def can_place_field_meadow(self):
+        locations = self.board_inverted.double.copy()
+        results = [(a, b) for (a, b) in locations if TT.Stable not in self.board[a] ]
+        if len(results) > 0:
+            return True, str(len(results)), sorted(results)
+        return False, "No spaces available", []
+
+    # stable
+    def can_place_stable(self):
+        if len(self.board_inverted.Stable) > 3:
+            return False, "Already have 3 stables", []
+        board = self.board_inverted
+        locations = self.all_non_empty_locations()
+        locations.update(board.empty)
+        locations.difference_update(board.Stable, board[TT.Field])
+        if len(locations) > 0:
+            return True, str(len(locations)), sorted(locations)
+        return False, "No spaces available", []
+
+    def place_building(self, building, location):
+        available, msg, locations = self.can_building_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here:", locations
+        self.place_single_tile(building, location)
+        return True, "Success", location
+
+    def place_tunnel_or_cavern(self, tile_type, location):
+        available, msg, locations = self.can_tunnel_or_cavern_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here:", locations
+        self.place_single_tile(tile_type, location)
+        return True, "Success", location
+
+    def place_ruby_mine(self, tile_type, location):
+        available, msg, locations = self.can_ruby_mine_be_placed()
+        if not available:
+            return available, msg, locations
+        if locations not in locations:
+            return False, "Position given doesn't match try from here", locations
+        previous_type = self.board[location]
+        self.place_single_tile(tile_type, location)
+        if previous_type == TT.Deep_Tunnel:
+            return True, "Success and bonus achieved", location
+        return True, "Success", location
+
+    def place_meadow(self, tile_type, location):
+        available, msg, locations = self.can_meadow_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type, location)
+        return True, "Success", location
+
+    def place_field(self,tile_type, location):
+        available, msg, locations = self.can_field_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type, location)
+        return True, "Success", location
+
+    def place_small_pasture(self,tile_type, location):
+        available, msg, locations = self.can_small_pasture_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type, location)
+        return True, "Success", location
+
+    def place_ore_mine_and_deep_tunnel(self, tile_type, location):
         available, msg, locations = self.can_ore_mine_and_deep_tunnel_be_placed()
         if not available:
             return available, msg, locations
         if location not in locations:
             return False, "Given location doesn't match try from here", locations
-        board = self.board
-        lookup = self.board_inverted
-        board[location[0]].discard(TT.Tunnel)
-        board[location[1]].discard(TT.Tunnel)
-        board[location[0]].add(TT.Deep_Tunnel)
-        board[location[1]].add(TT.Ore_Mine)
-        lookup[TT.Tunnel].difference_update(location)
-        lookup[TT.Deep_Tunnel].add(location[0])
-        lookup[TT.Ore_Mine].add(location[1])
+        self.place_single_tile(tile_type[0], location[0])
+        self.place_single_tile(tile_type[1], location[1])
         return True, "Success", location
 
-    # large-pasture
-    def can_large_pasture_be_placed(self):
-        pass
+    def place_large_pasture(self, tile_type, location):
+        available, msg, locations = self.can_large_pasture_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type[0], location[0])
+        self.place_single_tile(tile_type[1], location[1])
+        return True, "Success", location
 
-    # cavern-cavern
-    # cavern-tunnel
-    # meadow-field
-    # stable
-    # number of fields available to sow
+    def place_cavern_cavern(self, tile_type, location):
+        available, msg, locations = self.can_cavern_cavern_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type[0], location[0])
+        self.place_single_tile(tile_type[1], location[1])
+        return True, "Success", location
+
+    def place_cavern_tunnel(self, tile_type, location):
+        available, msg, locations = self.can_cavern_tunnel_be_placed()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type[0], location[0])
+        self.place_single_tile(tile_type[1], location[1])
+        return True, "Success", location
+
+    def place_field_meadow(self, tile_type, location):
+        available, msg, locations = self.can_place_field_meadow()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type[0], location[0])
+        self.place_single_tile(tile_type[1], location[1])
+        return True, "Success", location
+
+    def place_stable(self, tile_type, location):
+        available, msg, locations = self.can_place_stable()
+        if not available:
+            return available, msg, locations
+        if location not in locations:
+            return False, "Position given doesn't match try from here", locations
+        self.place_single_tile(tile_type, location)
+        return True, "Success", location
 
     def can_specific_tile_be_placed(self, tile_name):
-        # can't place an empty tile
         if tile_name == 'empty' or tile_name == 'expanded_empty':
             return False
         is_building = tile_name in BT.values()
-        dual_tile = tile_name in DUAL_TILES
-        # 3 categories are building, dual_tile, and single tile all need to be on correct board
+        dual_tile = tile_name in DT
         if is_building:
-            # buildings can't be placed on forest board
             if not self.is_forest:
                 return False
         else:
@@ -482,17 +522,14 @@ class Board:
             else:
                 if self.tile_does_not_belong(tile_name):
                     return False
-
-        # at this point we have identified which category and verified that on the right board
         if is_building:
             available_spaces = self.tile_count(TT.Cavern)
             if self.tunnels_are_also_caverns:
                 available_spaces += self.tile_count(TT.Tunnel)
                 available_spaces += self.tile_count(TT.Deep_Tunnel)
             return available_spaces > 0
-
         if dual_tile:
-            if tile_name == DUAL_TILES.Ore_Mine_Deep_Tunnel or tile_name == DUAL_TILES.Large_Pasture:
+            if tile_name == DT.Ore_Mine_Deep_Tunnel or tile_name == DT.Large_Pasture:
                 return len(self.board_inverted.special) > 0
             else:
                 return len(self.board_inverted.double) > 0

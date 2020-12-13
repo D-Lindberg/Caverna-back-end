@@ -1,10 +1,11 @@
 from constants import CAVERNA_ACTIONS as CA
 
+
 class Dwarf:
-    def __init__(self, isOffspring, ID):
-        self.ID = ID
-        self.isOffspring = isOffspring
-        self.isUsed = isOffspring
+    def __init__(self, is_offspring, dwarf_id):
+        self.ID = dwarf_id
+        self.isOffspring = is_offspring
+        self.isUsed = is_offspring
         self.weapon_level = 0
 
     def get_food_requirements(self):
@@ -15,6 +16,5 @@ class Dwarf:
             self.weapon_level = int(action_name.split(' ')[1])
 
     def increase_weapon_level(self):
-        if self.weapon_level < 14 and self.weapon_level > 0:
+        if 14 > self.weapon_level > 0:
             self.weapon_level += 1
-

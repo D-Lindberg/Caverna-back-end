@@ -1,10 +1,5 @@
-    """ 
-    Creates an Action Group Object which may or may not be nested. if it is not nested then it contains only the action name. if it is nested then it contains a list of actions that are to be separated by a common separator such as "and then / or" or "and / or" or "and then" or "either ... or".
 
-    the object also contains methods that determine if an action is used, mark it as used, or set all actions as used or unused.
-    """
-
-class Action_Group:
+class ActionGroup:
 
     def __init__(self, action_name, is_single_action, order):
         self.actions = []

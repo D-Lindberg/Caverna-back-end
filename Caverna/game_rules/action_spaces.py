@@ -2,8 +2,8 @@ from constants import ACTION_SPACE_TYPES as AST
 from action_grouper import Action_Group
 
 
-#refence rule appendix page A6 under "Part 3: The Action Spaces"
-class Game_Action_Space:
+# reference rule appendix page A6 under "Part 3: The Action Spaces"
+class GameActionSpace:
     def __init__(self, **kwargs):
         self.id = kwargs.get('id', 0)
         self.name = kwargs.get('name')
@@ -68,7 +68,7 @@ class Game_Action_Space:
 
     def mark_as_finished(self):
         self._action_group.set_is_used(True)
-    
+
     def get_accumulating_resources_total(self):
         total = self._wood_current
         total += self._stone_current
@@ -114,7 +114,7 @@ class Game_Action_Space:
         nested = Action_Group("Nested", False, order)
         nested.type = package[1]
         for index, element in enumerate(package[0]):
-            if type(element) == type('abcdefghijklmnopqrstuvwxyz'):
+            if type(element) == str:
                 nested.actions.append(Action_Group(element, True, index))
             else:
                 nested.actions.append(self.unpack_this(element, index))
@@ -124,24 +124,17 @@ class Game_Action_Space:
             'Dog': self._dog_static,
             'Donkey': self._donkey_current,
             'Food': self._food_current + self._food_static,
-            'Gold' : self.gold_static,
-            'Ore' : self._ore_current + self._ore_static,
-            'Pumpkin' : self._pumpkin_current + self._pumpkin_static,
-            'Ruby' : self._ruby_current + self._ruby_static,
-            'Sheep' : self._sheep_current,
-            'Stone' : self._stone_current + self._stone_static,
-            'Wheat' : self._wheat_static,
-            'Wood' : self._wood_current + self._wood_static,
-            'Bonus' : {
-                'Ruby+1_if_this_many_mines' : self._mines_needed_for_ruby_bonus,
-                'Ore_2_per_mine' : self._ore_bonus_for_mines
-                }
+            'Gold': self.gold_static,
+            'Ore': self._ore_current + self._ore_static,
+            'Pumpkin': self._pumpkin_current + self._pumpkin_static,
+            'Ruby': self._ruby_current + self._ruby_static,
+            'Sheep': self._sheep_current,
+            'Stone': self._stone_current + self._stone_static,
+            'Wheat': self._wheat_static,
+            'Wood': self._wood_current + self._wood_static,
+            'Bonus': {
+                'Ruby+1_if_this_many_mines': self._mines_needed_for_ruby_bonus,
+                'Ore_2_per_mine': self._ore_bonus_for_mines
+            }
         }
         return resources
-
-        
-
-
-
-
-

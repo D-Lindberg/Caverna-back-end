@@ -209,6 +209,29 @@ class TileManager2:
         locations.extend(self.animal_locations_in('caves'))
         return locations
 
+    def get_large_pastures(self):
+        return self.forest_type_to_locations['Large_Pastures']
+
+    def update_positions_availble_for_placement_by_non_building_tiles(self):
+        forest = self.forest_type_to_locations
+        caves = self.caves_type_to_locations
+        for board, is_forest in [(forest, True), (caves, False)]:
+            occupied = self.locations_already_occupied_excluding_stables(is_forest)
+            if len(occupied) == 0:
+                #only forest will be completely empty at begining of game
+                board['first_tile_options'] = [(3,1)]
+                continue
+            empty_spaces = set()
+            for location in occupied:
+                empty_spaces.update(self.get_empty_neighbors_of(location, is_forest))
+            board['first_tile_options'] = sorted(empty_spaces)
+
+    def get_valid_single_empty_tile_spaces(self, is_forest):
+        return self.forest_type_to_locations['first_tile_options'] if is_forest else self.caves_type_to_locations['first_tile_options']
+
+
+
+
 
 
 

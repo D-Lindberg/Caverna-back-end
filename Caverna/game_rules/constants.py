@@ -191,7 +191,6 @@ BUILDING_TYPES = AttrDict({
     'Supplies_Storage' : "supplies storage",
     'Trader' : "trader",
     'Treasure_Chamber' : "treasure chamber",
-    'Unavailable' : "unavailable",
     'Weapon_Storage' : "weapon storage",
     'Weaving_Parlor' : "weaving parlor",
     'Working_Cave' : "working cave",
@@ -366,6 +365,9 @@ FOREST_TYPES = [
 ]
 
 CAVE_TYPES = [
+    DUAL_TILES.Cavern_Cavern,
+    DUAL_TILES.Cavern_Tunnel,
+    DUAL_TILES.Ore_Mine_Deep_Tunnel,
     TILE_TYPES.Cavern, 
     TILE_TYPES.Deep_Tunnel, 
     TILE_TYPES.Ore_Mine, 

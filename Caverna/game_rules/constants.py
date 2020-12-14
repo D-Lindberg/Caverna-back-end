@@ -388,6 +388,14 @@ ANIMAL_TILE_TYPES = [
     BUILDING_TYPES.Cuddle_Room
 ]
 
+HARVEST_SEQUENCE = [
+    (TILE_TYPES.Wheat_Field_1, TILE_TYPES.Field),
+    (TILE_TYPES.Wheat_Field_2, TILE_TYPES.Wheat_Field_1),
+    (TILE_TYPES.Wheat_Field_3, TILE_TYPES.Wheat_Field_2),
+    (TILE_TYPES.Pumpkin_Field_1, TILE_TYPES.Field),
+    (TILE_TYPES.Pumpkin_Field_2, TILE_TYPES.Pumpkin_Field_1)
+]
+
 # reference rule book page 11 under "Food Conversion Rules"
 TRADES_TO_FOOD = AttrDict({
     'Cancel': "Cancel food conversion",

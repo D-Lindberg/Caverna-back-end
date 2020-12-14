@@ -52,6 +52,7 @@ class Board:
         if self.is_forest:
             self._update_large_pasture_locations()
             self.expandable_forest = kwargs.get('expandable_forest', False)
+            self.has_stubble_room = kwargs.get('has_stubble_room', False)
         else:
             self.tunnels_are_also_caverns = self.has_tile_named(BT.Work_Room)
         self._update_available_spaces()
@@ -146,6 +147,8 @@ class Board:
         if self.is_forest:
             animal_tiles.intersection_update(forest_tiles)
             animal_tiles.update('Large_Pasture')
+            if self.has_stubble_room:
+                animal_tiles.update(TT.Field)
         else:
             animal_tiles.difference_update(forest_tiles)
         return [(board, tile, sorted(locations_of[tile])) for tile in animal_tiles]

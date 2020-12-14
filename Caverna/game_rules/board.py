@@ -86,7 +86,7 @@ class Board:
             base_set.intersection_update([x for x in CAVE_TYPES if type(x) == str])
             [base_set.add(building) for building in BT.values()]
         base_set.add({'empty', 'expanded_empty', 'single', 'double', 'special'})
-        d = AttrDict({tile: set() for tile in base_set})
+        d = AttrDict({tile: set() for tile in base_set}, recursive=False)
 
         for (location, tile_types) in self.board.items():
             for tile_type in tile_types:

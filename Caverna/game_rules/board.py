@@ -140,18 +140,48 @@ class Board:
 
     def extract_animal_locations(self):
         locations_of = self.board_inverted
-        board = self.board_type
-        animal_tiles = set(ANIMAL_TILE_TYPES)
-        #forest animal_tiles may include lists, but only need strings
-        forest_tiles = set([x for x in FOREST_TYPES if type(x) == str])
+        animals = {'board_type': self.board_type}
         if self.is_forest:
-            animal_tiles.intersection_update(forest_tiles)
-            animal_tiles.update('Large_Pasture')
+            stables = locations_of[TT.Stable].copy()
+            for locations in locations_of.Large_Pasture:
+                if locations[0] in stables and locations[1] in stables:
+                    animals.setdefault('Large_pasture_2',[]).append(locations[0])
+                    stables.difference_update(locations)
+                elif locations[0] in stables or locations[1] in stables:
+                    animals.setdefault('Large_pasture_1'),[].append(locations[0])
+                    stables.difference_update(locations)
+                else:
+                    animals.setdefault('Large_pasture_0',[]).append(locations[0])
+            for location in locations_of[TT.Pasture_Small]:
+                if location in stables:
+                    animals.setdefault('Small_pasture_1',[]).append(location)
+                    stables.discard(location)
+                else:
+                    animals.setdefault('Small_pasture_0',[]).append(location)
+            for location in locations_of[TT.Meadow]:
+                if location in stables:
+                    animals.setdefault('Meadow_1',[]).append(location)
+                else:
+                    animals.setdefault('Meadow_0',[]).append(location)
+            for location in stables:
+                animals.setdefault('Forest', []).append(location)
             if self.has_stubble_room:
-                animal_tiles.update(TT.Field)
+                for location in locations_of[TT.Field]:
+                    animals.setdefault('Field', []).append(location)
         else:
-            animal_tiles.difference_update(forest_tiles)
-        return [(board, tile, sorted(locations_of[tile])) for tile in animal_tiles]
+            for location in locations_of[BT.Breakfast_Room]:
+                animals.setdefault('Breakfast_Room', []).append(location)
+            for location in locations_of[BT.Cuddle_Room]:
+                animals.setdefault('Cuddle_Room', []).append(location)
+            for location in locations_of[BT.Mixed_Dwelling]:
+                animals.setdefault('Mixed_Dwelling', []).append(location)
+            for location in locations_of[TT.Ore_Mine]:
+                animals.setdefault('Ore_Mine', []).append(location)
+            for location in locations_of[TT.Ruby_Mine]:
+                animals.setdefault('Ruby_Mine', []).append(location)
+            for location in locations_of[TT.Starting_Tile]:
+                animals.setdefault('Starting_Tile', []).append(location)
+        return animals
 
     def has_tile_named(self, tile_name):
         # do not use to lookup dual tiles

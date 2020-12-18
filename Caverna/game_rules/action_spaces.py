@@ -1,5 +1,5 @@
 from constants import ACTION_SPACE_TYPES as AST
-from action_grouper import Action_Group
+from action_group import Action_Group
 
 
 # reference rule appendix page A6 under "Part 3: The Action Spaces"

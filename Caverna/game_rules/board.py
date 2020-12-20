@@ -51,10 +51,10 @@ class Board:
         self.board_inverted = self._convert_board()
         if self.is_forest:
             self._update_large_pasture_locations()
-            self.expandable_forest = kwargs.get('expandable_forest', False)
+            self.expandable_forest = kwargs.get('has_work_room', False)
             self.has_stubble_room = kwargs.get('has_stubble_room', False)
         else:
-            self.tunnels_are_also_caverns = self.has_tile_named(BT.Work_Room)
+            self.tunnels_are_also_caverns = kwargs.get('has_work_room', False)
         self._update_available_spaces()
 
     def activate_expandable_forest(self):

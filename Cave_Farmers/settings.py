@@ -1,5 +1,3 @@
-import django_heroku
-
 """
 Django settings for Cave_Farmers project.
 
@@ -11,6 +9,10 @@ https://docs.djangoproject.com/en/3.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
+
+import datetime
+import django_heroku
+import os
 
 from pathlib import Path
 
@@ -41,6 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'django_extensions',
+    'channels',
+    'rest_framework',
     'Caverna',
 ]
 
@@ -61,6 +65,15 @@ CORS_ORIGIN_WHITELIST = [
 ]
 
 ROOT_URLCONF = 'Cave_Farmers.urls'
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+        }
+    }
+}
 
 TEMPLATES = [
     {
@@ -79,6 +92,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Cave_Farmers.wsgi.application'
+ASGI_APPLICATION = 'Cave_Farmers.routing.application'
 
 
 # Database
@@ -129,5 +143,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+AUTH_USER_MODEL = 'Caverna.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    )
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=1),
+    'USER_ID_CLAIM': 'id',
+}
+
 
 django_heroku.settings(locals())

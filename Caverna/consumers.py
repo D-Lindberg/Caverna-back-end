@@ -1,37 +1,45 @@
+"""
+    Workflow: client submits request to ws(s)://server.domain/ws/notifications
+    the "Payload": {'model': 'app.model_name', 'id': 'pk or a secure version of pk'}
+    all sockets are accepted at first
+
+    if user is authenticated and has permissions for the specific onject 
+    then they are assigned a group to receive updates via socket. if not then 
+    they are presented with errors such as need to login, or register, renew tokens, etc
+
+    consumer handles all incoming requests and assigns sockets to different groups
+
+    consumer/function will act as emitter to broadcast all changes to the 
+    specific subscribers. it will format the message/payload to have model_name
+    in similar form as the original request: {'update_to_model': 'new_model_data_in_JSON'}
+
+    consumer will handle change-requests from user. these will be assigned 
+    to helper functions that will manipulated data and then save it to db which 
+    triggers the emitter to broadcast
+
+"""
+
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 
-class CaveFarmerConsumer(AsyncJsonWebsocketConsumer):
-    groups = ['test']
-
+class NotificationConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-        user = self.scope['user']
-        if user.is_anonymous:
-            await self.close()
-        else:
-            await self.channel_layer.group_add(
-                group='test',
-                channel=self.channel_name
-            )
-            await self.accept()
+        # always accept. can be closed later if needed
+        await self.accept()
 
-    async def disconnect(self, code):
-        await self.channel_layer.group_discard(
-            group='test',
-            channel=self.channel_name
-        )
-        await super().disconnect(code)
-
-    async def echo_message(self, message):
-        await self.send_json({
-            'type': message.get('type'),
-            'data': message.get('data')
-        })
+    async def notify(self, event):
+        # emitter that relays other group_send msgs
+        # incoming is {type: notify, content: json_msg}
+        await self.send_json(event['content'])
 
     async def receive_json(self, content, **kwargs):
-        message_type = content.get('type')
-        if message_type == 'echo.message':
-            await self.send_json({
-                'type': message_type,
-                'data': content.get('data')
-            })
+        # validate data then permissions
+        serializer = self.get_serializer(data=content)
+        if not serializer.is_valid():
+            return
+        group_name = serializer.get_group_name()
+        self.groups.append(group_name)
+
+    def get_serializer(self, data):
+        # based on fields in data, find correct serializer and then serialize it and return the serializer
+        pass

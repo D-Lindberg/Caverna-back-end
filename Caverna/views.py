@@ -1,15 +1,9 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import render
 from rest_framework import generics
-from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .serializers import LogInSerializer, UserSerializer
+from .serializers import CreateUserSerializer
 
 
-class SignUpView(generics.CreateAPIView):
+class RegisterView(generics.CreateAPIView):
     queryset = get_user_model().objects.all()
-    serializer_class = UserSerializer
-
-
-class LogInView(TokenObtainPairView):
-    serializer_class = LogInSerializer
+    serializer_class = CreateUserSerializer

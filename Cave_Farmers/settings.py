@@ -94,7 +94,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Cave_Farmers.wsgi.application'
-ASGI_APPLICATION = 'Cave_Farmers.routing.application'
+ASGI_APPLICATION = 'Cave_Farmers.asgi.application'
 
 
 # Database

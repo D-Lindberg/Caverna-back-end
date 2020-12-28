@@ -1,45 +1,45 @@
-"""
-    Workflow: client submits request to ws(s)://server.domain/ws/notifications
-    the "Payload": {'model': 'app.model_name', 'id': 'pk or a secure version of pk'}
-    all sockets are accepted at first
 
-    if user is authenticated and has permissions for the specific onject 
-    then they are assigned a group to receive updates via socket. if not then 
-    they are presented with errors such as need to login, or register, renew tokens, etc
-
-    consumer handles all incoming requests and assigns sockets to different groups
-
-    consumer/function will act as emitter to broadcast all changes to the 
-    specific subscribers. it will format the message/payload to have model_name
-    in similar form as the original request: {'update_to_model': 'new_model_data_in_JSON'}
-
-    consumer will handle change-requests from user. these will be assigned 
-    to helper functions that will manipulated data and then save it to db which 
-    triggers the emitter to broadcast
-
-"""
-
+import jwt
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from Cave_Farmers.settings import SECRET_KEY
 
 
 class NotificationConsumer(AsyncJsonWebsocketConsumer):
+    # from client: {'token': xyz, 'game_id': 123}
+    # to consumer to client: {'type': 'notify', 'content': msg_as_dict}
+    # to client: {'type/message/payload': msg_as_dict}
+    groups = []
+    un_authenticated = True
+    user_id = 0
+
+    async def authenticate_self(self, content):
+        token = content.get('token', 0)
+        if token == 0:
+            return
+        try:
+            decrypted = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        except (jwt.ExpiredSignatureError, jwt.DecodeError, jwt.InvalidTokenError):
+            decrypted = {'id': '0'}
+        self.user_id = int(decrypted['id'])
+        self.un_authenticated = self.user_id == 0
+
     async def connect(self):
-        # always accept. can be closed later if needed
         await self.accept()
 
     async def notify(self, event):
-        # emitter that relays other group_send msgs
-        # incoming is {type: notify, content: json_msg}
         await self.send_json(event['content'])
 
     async def receive_json(self, content, **kwargs):
-        # validate data then permissions
-        serializer = self.get_serializer(data=content)
-        if not serializer.is_valid():
-            return
-        group_name = serializer.get_group_name()
-        self.groups.append(group_name)
+        if self.un_authenticated:
+            await self.authenticate_self(content)
+            if self.un_authenticated:
+                await self.close()
+        game_id = content.get('game_id', 0)
+        game = f"Game_{game_id}"
+        player = f"player_{self.user_id}"
+        self.groups.extend([game, player])
+        await self.channel_layer.group_add(game, self.channel_name)
+        await self.channel_layer.group_add(player, self.channel_name)
 
-    def get_serializer(self, data):
-        # based on fields in data, find correct serializer and then serialize it and return the serializer
-        pass
+
+
